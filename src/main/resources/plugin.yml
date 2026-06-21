@@ -1,0 +1,19 @@
+name: TrailErosion
+version: '${version}'
+main: net.aguiar.trailerosion.TrailErosionPlugin
+api-version: '1.21'
+author: aguiar-labs
+description: Desire paths - blocks erode into worn variants as players walk over them, and revert when left alone.
+# Folia: we use the region/global region schedulers correctly (see code). This flag
+# alone does nothing without that; both are required to run safely on Folia.
+folia-supported: true
+commands:
+  trailerosion:
+    description: Manage the TrailErosion plugin
+    usage: /trailerosion <reload|convert-to-vanilla>
+    aliases: [te]
+    permission: trailerosion.admin
+permissions:
+  trailerosion.admin:
+    description: Allows managing TrailErosion (reload, convert-to-vanilla)
+    default: op

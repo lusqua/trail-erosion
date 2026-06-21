@@ -1,0 +1,53 @@
+# TrailErosion config
+# "Desire paths": blocks erode into worn variants as players walk over them,
+# and slowly revert toward their original form when left untouched.
+
+# Base number of steps needed to advance one erosion stage.
+stepsPerStage: 8
+
+# Optional per-chain override of stepsPerStage, keyed by the chain's root material.
+# Chains not listed here use the global stepsPerStage above. With thresholdJitter applied,
+# the actual per-block threshold lands within +/- jitter of the value here.
+# Stone wears slowly: ~15-20 passes to crack smooth stone into cobblestone.
+stepsPerStageByMaterial:
+  SMOOTH_STONE: 17
+
+# Random +/- applied to stepsPerStage per block so erosion isn't uniform.
+# 0.4 -> per-block threshold lands in [stepsPerStage*0.6, stepsPerStage*1.4].
+thresholdJitter: 0.4
+
+# Players riding a mount erode the ground faster (matches TRMT default).
+mountedMultiplier: 2.0
+
+# Idle time (real minutes) before an eroded block reverts one stage toward original.
+revertAfterMinutes: 20
+
+# How often the revert sweep runs (seconds).
+revertScanIntervalSeconds: 60
+
+# Worlds to skip entirely (no erosion, no tracking).
+disabledWorlds: []
+
+# TODO hook: skip blocks inside protected regions/claims. No region-plugin
+# integration in v1 - this flag does nothing yet.
+ignoreInClaims: false
+
+# Erosion chains: ordered lists. Each material erodes into the next entry;
+# reversion walks the chain backwards. Only the grass chain is enabled by default;
+# uncomment the others to opt in. Verified against the Paper API for MC 26.1.
+chains:
+  GRASS_BLOCK:
+    - GRASS_BLOCK
+    - DIRT_PATH
+    - COARSE_DIRT
+  # Smooth stone gets walked into cobblestone (worn/cracked look). Slow: see
+  # stepsPerStageByMaterial.SMOOTH_STONE above (~15-20 passes).
+  SMOOTH_STONE:
+    - SMOOTH_STONE
+    - COBBLESTONE
+  # PODZOL:
+  #   - PODZOL
+  #   - DIRT_PATH
+  # MYCELIUM:
+  #   - MYCELIUM
+  #   - DIRT_PATH
