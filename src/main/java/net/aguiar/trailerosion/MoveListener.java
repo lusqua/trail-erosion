@@ -61,10 +61,21 @@ final class MoveListener implements Listener {
         long key = BlockKey.pack(floor.getX(), floor.getY(), floor.getZ());
         ConcurrentHashMap<Long, BlockProgress> worldMap = plugin.worldMap(world.getUID());
 
-        // Create-or-get is atomic on the concurrent map; a single block is only ever touched
-        // by one region thread, so the per-progress mutations below need no extra locking.
-        BlockProgress bp = worldMap.computeIfAbsent(key, k ->
-                new BlockProgress(root, indexOf(chain, mat), plugin.rollThreshold(root), now()));
+        BlockProgress bp = worldMap.get(key);
+        if (bp == null) {
+            // Only ever START erosion from a chain ROOT (the original, natural block — grass,
+            // smooth stone). Mid-chain blocks we didn't create (a hand-built dirt path, a
+            // cobblestone floor, …) are left completely untouched: never eroded further, never
+            // reverted. This is what keeps the plugin from ruining player builds.
+            if (mat != root) {
+                return;
+            }
+            // A single block is only ever touched by one region thread; putIfAbsent guards the
+            // rare race where the map is shared across regions.
+            BlockProgress created = new BlockProgress(root, 0, plugin.rollThreshold(root), now());
+            BlockProgress prev = worldMap.putIfAbsent(key, created);
+            bp = prev != null ? prev : created;
+        }
 
         int maxStage = chain.size() - 1;
         bp.lastStepMillis = now();
@@ -84,29 +95,25 @@ final class MoveListener implements Listener {
         int targetStage = bp.stage + 1;
         Material targetMat = chain.get(targetStage);
         Location loc = floor.getLocation();
+        final BlockProgress progress = bp; // effectively-final alias for the lambda
 
         // Folia: schedule the mutation on the region that owns this block's location.
         plugin.getServer().getRegionScheduler().execute(plugin, loc, () -> {
             Block b = loc.getBlock();
             // Re-check: only transform if the block is still the expected current-stage material
             // (it could have been changed by the world in the meantime).
-            if (b.getType() != chain.get(bp.stage)) {
+            if (b.getType() != chain.get(progress.stage)) {
                 worldMap.remove(key);
                 return;
             }
             b.setType(targetMat, false);
-            bp.stage = targetStage;
-            bp.threshold = plugin.rollThreshold(bp.root);
+            progress.stage = targetStage;
+            progress.threshold = plugin.rollThreshold(progress.root);
         });
     }
 
     private static boolean isRiding(PlayerMoveEvent event) {
         return event.getPlayer().isInsideVehicle();
-    }
-
-    private static int indexOf(List<Material> chain, Material mat) {
-        int i = chain.indexOf(mat);
-        return i < 0 ? 0 : i;
     }
 
     private static long now() {
