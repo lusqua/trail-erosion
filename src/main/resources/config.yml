@@ -3,7 +3,7 @@
 # and slowly revert toward their original form when left untouched.
 
 # Base number of steps needed to advance one erosion stage.
-stepsPerStage: 8
+stepsPerStage: 16
 
 # Optional per-chain override of stepsPerStage, keyed by the chain's root material.
 # Chains not listed here use the global stepsPerStage above. With thresholdJitter applied,
